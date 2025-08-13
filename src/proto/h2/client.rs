@@ -12,8 +12,11 @@ use bytes::Bytes;
 use futures_channel::mpsc::{Receiver, Sender};
 use futures_channel::{mpsc, oneshot};
 use futures_core::{ready, FusedFuture, FusedStream, Stream};
-use h2::client::{Builder, Connection, SendRequest};
-use h2::SendStream;
+use h2::{
+    client::{Builder, Connection, ResponseFuture, SendRequest},
+    frame::{Priorities, PseudoOrder, SettingsOrder, StreamDependency},
+    SendStream,
+};
 use http::{Method, StatusCode};
 use pin_project_lite::pin_project;
 
@@ -31,7 +34,6 @@ use crate::proto::Dispatched;
 use crate::rt::bounds::Http2ClientConnExec;
 use crate::upgrade::Upgraded;
 use crate::{Request, Response};
-use h2::client::ResponseFuture;
 
 type ClientRx<B> = crate::client::dispatch::Receiver<Request<B>, Response<IncomingBody>>;
 
@@ -64,6 +66,7 @@ const DEFAULT_INITIAL_MAX_SEND_STREAMS: usize = 100;
 #[derive(Clone, Debug)]
 pub(crate) struct Config {
     pub(crate) adaptive_window: bool,
+    pub(crate) initial_stream_id: Option<u32>,
     pub(crate) initial_conn_window_size: u32,
     pub(crate) initial_stream_window_size: u32,
     pub(crate) initial_max_send_streams: usize,
@@ -75,14 +78,22 @@ pub(crate) struct Config {
     pub(crate) max_concurrent_reset_streams: Option<usize>,
     pub(crate) max_send_buffer_size: usize,
     pub(crate) max_pending_accept_reset_streams: Option<usize>,
-    pub(crate) header_table_size: Option<u32>,
     pub(crate) max_concurrent_streams: Option<u32>,
+    pub(crate) enable_push: Option<bool>,
+    pub(crate) enable_connect_protocol: Option<bool>,
+    pub(crate) header_table_size: Option<u32>,
+    pub(crate) headers_pseudo_order: Option<PseudoOrder>,
+    pub(crate) headers_priority: Option<StreamDependency>,
+    pub(crate) settings_order: Option<SettingsOrder>,
+    pub(crate) priority: Option<Priorities>,
+    pub(crate) headers_stream_dependency: Option<StreamDependency>,
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
             adaptive_window: false,
+            initial_stream_id: None,
             initial_conn_window_size: DEFAULT_CONN_WINDOW,
             initial_stream_window_size: DEFAULT_STREAM_WINDOW,
             initial_max_send_streams: DEFAULT_INITIAL_MAX_SEND_STREAMS,
@@ -96,6 +107,13 @@ impl Default for Config {
             max_pending_accept_reset_streams: None,
             header_table_size: None,
             max_concurrent_streams: None,
+            enable_push: None,
+            enable_connect_protocol: None,
+            headers_pseudo_order: None,
+            headers_priority: None,
+            settings_order: None,
+            priority: None,
+            headers_stream_dependency: None,
         }
     }
 }
@@ -107,8 +125,12 @@ fn new_builder(config: &Config) -> Builder {
         .initial_window_size(config.initial_stream_window_size)
         .initial_connection_window_size(config.initial_conn_window_size)
         .max_header_list_size(config.max_header_list_size)
-        .max_send_buffer_size(config.max_send_buffer_size)
-        .enable_push(false);
+        .max_send_buffer_size(config.max_send_buffer_size);
+
+    if let Some(id) = config.initial_stream_id {
+        builder.initial_stream_id(id);
+    }
+
     if let Some(max) = config.max_frame_size {
         builder.max_frame_size(max);
     }
@@ -124,6 +146,35 @@ fn new_builder(config: &Config) -> Builder {
     if let Some(max) = config.max_concurrent_streams {
         builder.max_concurrent_streams(max);
     }
+
+    if let Some(opt) = config.enable_connect_protocol {
+        builder.enable_connect_protocol(opt);
+    }
+
+    if let Some(opt) = config.enable_push {
+        builder.enable_push(opt);
+    }
+
+    if let Some(max) = config.max_frame_size {
+        builder.max_frame_size(max);
+    }
+
+    if let Some(ref priorities) = config.priority {
+        builder.priorities(priorities.clone());
+    }
+
+    if let Some(ref order) = config.headers_pseudo_order {
+        builder.headers_pseudo_order(order.clone());
+    }
+
+    if let Some(ref order) = config.settings_order {
+        builder.settings_order(order.clone());
+    }
+
+    if let Some(ref dep) = config.headers_stream_dependency {
+        builder.headers_stream_dependency(dep.clone());
+    }
+
     builder
 }
 
