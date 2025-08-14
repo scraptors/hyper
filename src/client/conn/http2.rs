@@ -485,8 +485,8 @@ where
 
 
     /// HTTP/2 headers priority
-    pub fn headers_stream_dependency(&mut self, priority: Option<StreamDependency>) -> &mut Self {
-        self.h2_builder.headers_priority = priority;
+    pub fn headers_stream_dependency(&mut self, stream_dependency: Option<StreamDependency>) -> &mut Self {
+        self.h2_builder.headers_stream_dependency = stream_dependency;
         self
     }
     
