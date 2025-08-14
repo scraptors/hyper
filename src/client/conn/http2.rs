@@ -506,7 +506,7 @@ where
     }
     
     /// Http2 priority frames
-    pub fn priority(&mut self, priority: Option<Priorities>) -> &mut Self {
+    pub fn priorities(&mut self, priority: Option<Priorities>) -> &mut Self {
         self.h2_builder.priority = priority;
         self
     }
