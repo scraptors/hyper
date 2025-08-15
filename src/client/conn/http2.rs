@@ -10,8 +10,8 @@ use std::task::{Context, Poll};
 use std::time::Duration;
 
 use crate::rt::{Read, Write};
-use h2::frame::{Priorities, PseudoOrder, SettingsOrder, StreamDependency};
 use futures_core::ready;
+use h2::frame::{Priorities, PseudoOrder, SettingsOrder, StreamDependency};
 use http::{Request, Response};
 
 use super::super::dispatch::{self, TrySendError};
@@ -322,11 +322,11 @@ where
         self
     }
 
-     /// Sets the initial stream id for the connection.
-     pub fn initial_stream_id(&mut self, id: impl Into<Option<u32>>) -> &mut Self {
-         self.h2_builder.initial_stream_id = id.into();
-         self
-     }
+    /// Sets the initial stream id for the connection.
+    pub fn initial_stream_id(&mut self, id: impl Into<Option<u32>>) -> &mut Self {
+        self.h2_builder.initial_stream_id = id.into();
+        self
+    }
 
     /// Sets whether to use an adaptive flow control.
     ///
@@ -400,12 +400,23 @@ where
         self
     }
 
+    /// Enables or disables server push promises.
+    ///
+    /// This value is included in the initial SETTINGS handshake.
+    /// Setting this value to value to
+    /// false in the initial SETTINGS handshake guarantees that the remote server
+    /// will never send a push promise.
+    ///
+    /// This setting can be changed during the life of a single HTTP/2
+    /// connection by sending another settings frame updating the value.
     pub fn enable_push(&mut self, opt: bool) -> &mut Self {
         self.h2_builder.enable_push = Some(opt);
         self
     }
 
-
+    /// Enables the [extended CONNECT protocol].
+    ///
+    /// [extended CONNECT protocol]: https://datatracker.ietf.org/doc/html/rfc8441#section-4
     pub fn enable_connect_protocol(&mut self, opt: bool) -> &mut Self {
         self.h2_builder.enable_connect_protocol = Some(opt);
         self
@@ -483,28 +494,27 @@ where
         self
     }
 
-
     /// HTTP/2 headers priority
-    pub fn headers_stream_dependency(&mut self, stream_dependency: Option<StreamDependency>) -> &mut Self {
+    pub fn headers_stream_dependency(
+        &mut self,
+        stream_dependency: Option<StreamDependency>,
+    ) -> &mut Self {
         self.h2_builder.headers_stream_dependency = stream_dependency;
         self
     }
-    
+
     /// Http2 headers pseudo header order
-    pub fn headers_pseudo_order(
-        &mut self,
-        order: Option<PseudoOrder>,
-    ) -> &mut Self {
+    pub fn headers_pseudo_order(&mut self, order: Option<PseudoOrder>) -> &mut Self {
         self.h2_builder.headers_pseudo_order = order;
         self
     }
-    
+
     /// Http2 settings order
     pub fn settings_order(&mut self, order: Option<SettingsOrder>) -> &mut Self {
         self.h2_builder.settings_order = order;
         self
     }
-    
+
     /// Http2 priority frames
     pub fn priorities(&mut self, priority: Option<Priorities>) -> &mut Self {
         self.h2_builder.priority = priority;
