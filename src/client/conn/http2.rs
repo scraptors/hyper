@@ -355,8 +355,8 @@ where
     /// Sets the max size of received header frames.
     ///
     /// Default is currently 16KB, but can change.
-    pub fn max_header_list_size(&mut self, max: u32) -> &mut Self {
-        self.h2_builder.max_header_list_size = max;
+    pub fn max_header_list_size(&mut self, max: impl Into<Option<u32>>) -> &mut Self {
+        self.h2_builder.max_header_list_size = max.into();
         self
     }
 

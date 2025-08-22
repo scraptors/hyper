@@ -71,7 +71,7 @@ pub(crate) struct Config {
     pub(crate) initial_stream_window_size: u32,
     pub(crate) initial_max_send_streams: usize,
     pub(crate) max_frame_size: Option<u32>,
-    pub(crate) max_header_list_size: u32,
+    pub(crate) max_header_list_size: Option<u32>,
     pub(crate) keep_alive_interval: Option<Duration>,
     pub(crate) keep_alive_timeout: Duration,
     pub(crate) keep_alive_while_idle: bool,
@@ -97,7 +97,7 @@ impl Default for Config {
             initial_stream_window_size: DEFAULT_STREAM_WINDOW,
             initial_max_send_streams: DEFAULT_INITIAL_MAX_SEND_STREAMS,
             max_frame_size: Some(DEFAULT_MAX_FRAME_SIZE),
-            max_header_list_size: DEFAULT_MAX_HEADER_LIST_SIZE,
+            max_header_list_size: Some(DEFAULT_MAX_HEADER_LIST_SIZE),
             keep_alive_interval: None,
             keep_alive_timeout: Duration::from_secs(20),
             keep_alive_while_idle: false,
@@ -122,7 +122,6 @@ fn new_builder(config: &Config) -> Builder {
         .initial_max_send_streams(config.initial_max_send_streams)
         .initial_window_size(config.initial_stream_window_size)
         .initial_connection_window_size(config.initial_conn_window_size)
-        .max_header_list_size(config.max_header_list_size)
         .max_send_buffer_size(config.max_send_buffer_size);
 
     if let Some(id) = config.initial_stream_id {
@@ -137,6 +136,9 @@ fn new_builder(config: &Config) -> Builder {
     }
     if let Some(max) = config.max_pending_accept_reset_streams {
         builder.max_pending_accept_reset_streams(max);
+    }
+    if let Some(max) = config.max_header_list_size {
+        builder.max_header_list_size(max);
     }
     if let Some(size) = config.header_table_size {
         builder.header_table_size(size);
