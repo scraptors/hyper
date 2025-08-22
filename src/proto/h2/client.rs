@@ -97,7 +97,7 @@ impl Default for Config {
             initial_stream_window_size: DEFAULT_STREAM_WINDOW,
             initial_max_send_streams: DEFAULT_INITIAL_MAX_SEND_STREAMS,
             max_frame_size: Some(DEFAULT_MAX_FRAME_SIZE),
-            max_header_list_size: Some(DEFAULT_MAX_HEADER_LIST_SIZE),
+            max_header_list_size: None,
             keep_alive_interval: None,
             keep_alive_timeout: Duration::from_secs(20),
             keep_alive_while_idle: false,
@@ -131,20 +131,25 @@ fn new_builder(config: &Config) -> Builder {
     if let Some(max) = config.max_frame_size {
         builder.max_frame_size(max);
     }
+
     if let Some(max) = config.max_concurrent_reset_streams {
         builder.max_concurrent_reset_streams(max);
     }
+
     if let Some(max) = config.max_pending_accept_reset_streams {
         builder.max_pending_accept_reset_streams(max);
     }
+
     if let Some(max) = config.max_header_list_size {
         builder.max_header_list_size(max);
     }
-    if let Some(size) = config.header_table_size {
-        builder.header_table_size(size);
-    }
+
     if let Some(max) = config.max_concurrent_streams {
         builder.max_concurrent_streams(max);
+    }
+
+    if let Some(size) = config.header_table_size {
+        builder.header_table_size(size);
     }
 
     if let Some(opt) = config.enable_connect_protocol {
